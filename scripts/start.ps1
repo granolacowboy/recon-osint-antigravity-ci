@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [switch]$Detach
+    [switch]$Detach,
+    [switch]$NoBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,16 +36,39 @@ if ($current.Contains("REPLACE_WITH_RANDOM_")) {
 
 Push-Location $repoRoot
 try {
-    & docker compose run --rm --build --no-deps configcheck
+    if ($NoBuild) {
+        $runArguments = @(
+            "compose",
+            "up",
+            "--no-build",
+            "--pull",
+            "never",
+            "--no-deps",
+            "--abort-on-container-exit",
+            "--exit-code-from",
+            "configcheck",
+            "configcheck"
+        )
+    }
+    else {
+        $runArguments = @("compose", "run", "--rm", "--build", "--no-deps", "configcheck")
+    }
+    & docker @runArguments
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
-    if ($Detach) {
-        & docker compose up --build --detach --wait
+
+    $upArguments = @("compose", "up")
+    if ($NoBuild) {
+        $upArguments += @("--no-build", "--pull", "never")
     }
     else {
-        & docker compose up --build
+        $upArguments += "--build"
     }
+    if ($Detach) {
+        $upArguments += @("--detach", "--wait")
+    }
+    & docker @upArguments
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }

@@ -2,14 +2,18 @@
 set -eu
 
 detach=false
-case "${1:-}" in
-  "") ;;
-  --detach) detach=true ;;
-  *)
-    printf '%s\n' "usage: $0 [--detach]" >&2
-    exit 2
-    ;;
-esac
+no_build=false
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --detach) detach=true ;;
+    --no-build) no_build=true ;;
+    *)
+      printf '%s\n' "usage: $0 [--detach] [--no-build]" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 env_path="$repo_root/.env"
@@ -36,8 +40,27 @@ if grep -q 'REPLACE_WITH_RANDOM_' "$env_path"; then
 fi
 
 cd "$repo_root"
-docker compose run --rm --build --no-deps configcheck
-if [ "$detach" = true ]; then
-  exec docker compose up --build --detach --wait
+if [ "$no_build" = true ]; then
+  set -- \
+    compose up \
+    --no-build \
+    --pull never \
+    --no-deps \
+    --abort-on-container-exit \
+    --exit-code-from configcheck \
+    configcheck
+else
+  set -- compose run --rm --build --no-deps configcheck
 fi
-exec docker compose up --build
+docker "$@"
+
+set -- compose up
+if [ "$no_build" = true ]; then
+  set -- "$@" --no-build --pull never
+else
+  set -- "$@" --build
+fi
+if [ "$detach" = true ]; then
+  set -- "$@" --detach --wait
+fi
+exec docker "$@"
