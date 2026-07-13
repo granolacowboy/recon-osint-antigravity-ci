@@ -9,11 +9,10 @@ WORKFLOW = WORKFLOW_PATH.read_text(encoding="utf-8")
 BASELINE_JOBS = ("backend", "frontend", "integration", "containers")
 SELF_HOSTED_SELECTOR = "[self-hosted, Linux, X64, recon-readiness]"
 CONCURRENCY_GROUP = "recon-readiness-self-hosted"
-OWNER_AND_FORK_GUARD = (
+OWNER_PUSH_GUARD = (
+    "github.event_name == 'push' && "
     "github.actor == github.repository_owner && "
-    "github.triggering_actor == github.repository_owner && "
-    "(github.event_name != 'pull_request' || "
-    "github.event.pull_request.head.repo.full_name == github.repository)"
+    "github.triggering_actor == github.repository_owner"
 )
 
 
@@ -32,7 +31,7 @@ def _step_blocks(job_block: str) -> list[str]:
 
 def test_events_and_permissions_are_minimal() -> None:
     trigger_block = WORKFLOW.split("\npermissions:", maxsplit=1)[0]
-    assert re.search(r"(?m)^  pull_request:\s*$", trigger_block)
+    assert re.search(r"(?m)^  pull_request:\s*$", trigger_block) is None
     assert "pull_request_target:" not in trigger_block
 
     push = re.search(
@@ -44,7 +43,10 @@ def test_events_and_permissions_are_minimal() -> None:
         value.strip("'\"")
         for value in re.findall(r"(?m)^      -\s+(.+?)\s*$", push.group("body"))
     ]
-    assert branches == ["main"]
+    assert branches == ["main", "codex/**"]
+    assert re.search(
+        r'''(?m)^      -\s+['\"]codex/\*\*['\"]\s*$''', push.group("body")
+    )
 
     permissions = re.search(
         r"(?ms)^permissions:\n(?P<body>(?:  [^\n]+\n?)+)", WORKFLOW
@@ -77,10 +79,42 @@ def test_baseline_jobs_use_the_dedicated_self_hosted_runner() -> None:
         assert runs_on == [SELF_HOSTED_SELECTOR], job_name
 
 
-def test_self_hosted_jobs_require_owner_and_reject_fork_pull_requests() -> None:
+def test_self_hosted_jobs_require_owner_pushes() -> None:
     for job_name in BASELINE_JOBS:
         guards = re.findall(r"(?m)^    if:\s*(.+?)\s*$", _job_block(job_name))
-        assert guards == [OWNER_AND_FORK_GUARD], job_name
+        assert guards == [OWNER_PUSH_GUARD], job_name
+
+
+def test_ephemeral_runner_boundary_is_the_first_step_before_checkout() -> None:
+    required_commands = (
+        "set -euo pipefail",
+        'test "${RECON_EPHEMERAL_RUNNER:-}" = "1"',
+        'test -n "${RECON_RUNNER_INSTANCE:-}"',
+        'test "${RECON_RUNNER_INSTANCE:-}" = "${RUNNER_NAME:-}"',
+        'test "${DOCKER_HOST:-}" = "tcp://127.0.0.1:2375"',
+        "test ! -S /var/run/docker.sock",
+    )
+
+    for job_name in BASELINE_JOBS:
+        steps = _step_blocks(_job_block(job_name))
+        names = [
+            re.search(r"(?m)^      - name:\s*(.+?)\s*$", step).group(1)
+            for step in steps
+        ]
+        assert names[:2] == [
+            "Verify ephemeral runner boundary",
+            "Check out source",
+        ], job_name
+
+        boundary = steps[0]
+        assert re.search(r"(?m)^        shell:\s*bash\s*$", boundary), job_name
+        assert re.search(
+            r"(?m)^        working-directory:\s*\$\{\{ github\.workspace \}\}\s*$",
+            boundary,
+        ), job_name
+        normalized = re.sub(r"\s+", " ", boundary)
+        missing = [command for command in required_commands if command not in normalized]
+        assert missing == [], job_name
 
 
 def test_backend_job_preserves_application_configuration_defaults() -> None:
@@ -341,14 +375,19 @@ def test_public_mirror_and_runner_runbook_covers_safety_boundary() -> None:
         "/var/run/docker.sock",
         "host ports",
         "repository secrets",
+        "github.event_name == 'push'",
         "github.actor == github.repository_owner",
         "github.triggering_actor == github.repository_owner",
-        "owner-triggered events",
         "non-owner reruns are blocked",
         "dependabot",
         "bots",
         "collaborators",
         "outside actors",
+        "pull requests do not trigger this public self-hosted workflow",
+        "same-repository owner branch pushes attach the named checks to the "
+        "pull request head sha",
+        "fork code cannot schedule this repository-scoped runner",
+        "external controller, not mutable workflow yaml, is the trust boundary",
         "fork pull requests never execute",
         "never approve untrusted fork jobs",
         "docs/superpowers/**",
@@ -372,23 +411,45 @@ def test_public_mirror_and_runner_runbook_covers_safety_boundary() -> None:
         assert label in runbook
 
 
-def test_runbook_describes_the_workflow_lifetime_runner_model() -> None:
+def test_runbook_describes_the_one_job_ephemeral_runner_model() -> None:
     runbook = re.sub(r"\s+", " ", RUNBOOK_PATH.read_text(encoding="utf-8").lower())
     required_phrases = (
-        "workflow-lifetime runner process",
-        "accepts jobs serially",
-        "docker_host=tcp://127.0.0.1:2375",
-        "at most one active run and one pending run",
-        "never shares that dind with another runner",
-        "destroyed after the whole workflow",
-        "after the active workflow completes",
-        "before serving another",
-        "fixed integration ports",
-        "unique compose projects",
-        "unique image tags",
-        "optional future hardening",
+        "one `config.sh --ephemeral --disableupdate` runner per job",
+        "fresh runner container and workspace",
+        "fresh privileged dind daemon",
+        "private network namespace",
+        "unique runner name",
+        "no mounts",
+        "no host ports",
+        "no host docker socket",
+        "automatically deregistered by github after exactly one job",
+        "controller verifies deregistration",
+        "before provisioning another",
+        "each has its own isolated runner/dind pair",
+        "namespaces are separate",
+        "not because a runner accepts jobs serially",
+        "event is `push`",
+        "repository is `granolacowboy/recon-osint-antigravity-ci`",
+        "owner and triggering actor are both `granolacowboy`",
+        "workflow is `.github/workflows/ci.yml`",
+        "ref is `refs/heads/main` or matches `refs/heads/codex/**`",
+        "exact reviewed head sha",
+        "no repository runner remains online while no approved job is being admitted",
+        "`recon_ephemeral_runner=1`",
+        "`recon_runner_instance` is nonempty and equals `runner_name`",
+        "`docker_host=tcp://127.0.0.1:2375`",
+        "`/var/run/docker.sock` is not a socket",
+        "cannot prove `--ephemeral`",
+        "controller registration and github's one-job deregistration",
+        "global workflow concurrency",
+        "clean state comes from per-job ephemerality, not post-workflow timing",
     )
     missing = [phrase for phrase in required_phrases if phrase not in runbook]
     assert missing == []
-    assert "fresh runner workspace and fresh dind data volume for each job" not in runbook
-    assert "allow it to accept one job" not in runbook
+    for obsolete_claim in (
+        "workflow-lifetime runner process",
+        "keep that runner process for the complete workflow",
+        "destroyed after the whole workflow",
+        "optional future hardening",
+    ):
+        assert obsolete_claim not in runbook

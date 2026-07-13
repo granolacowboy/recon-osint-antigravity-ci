@@ -2,11 +2,29 @@
 
 ## Purpose and trust boundary
 
-The private source repository remains the system of record. Its `CI` workflow
-runs for pull requests and pushes to `main` when GitHub will schedule the jobs.
-An account-level Actions stop can prevent job creation even when the target is
-self-hosted. In that situation, use the history-free public CI mirror described
-below; do not make the private source repository public.
+The private source repository remains the system of record. An account-level
+Actions stop can prevent job creation even when the target is self-hosted. In
+that situation, use the history-free public CI mirror described below; do not
+make the private source repository public.
+
+The public workflow triggers only for pushes to `main` and branches matching
+`codex/**`. Pull requests do not trigger this public self-hosted workflow;
+same-repository owner branch pushes attach the named checks to the pull request
+head SHA. Fork code cannot schedule this repository-scoped runner. Fork pull
+requests never execute on it. The external controller, not mutable workflow
+YAML, is the trust boundary.
+
+As defense in depth, every job has this single-line guard:
+
+```text
+github.event_name == 'push' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
+```
+
+Non-owner reruns are blocked even when the original event was permitted.
+Dependabot, other bots, collaborators, and outside actors are also excluded.
+Operators must never approve untrusted fork jobs or weaken the admission
+policy; reproduce a reviewed change on an owner-controlled, same-repository
+branch instead.
 
 The workflow grants only `contents: read`. It does not reference repository
 secrets, upload or download artifacts, or persist dependency and vulnerability
@@ -17,84 +35,94 @@ backend, frontend, integration, and container gates all select exactly:
 runs-on: [self-hosted, Linux, X64, recon-readiness]
 ```
 
-Register the runner at repository scope with all four labels: `self-hosted`,
+Register each runner at repository scope with all four labels: `self-hosted`,
 `Linux`, `X64`, and `recon-readiness`. Do not add a broader organization runner
 group to this workflow.
 
-Every job requires both `github.actor == github.repository_owner` and
-`github.triggering_actor == github.repository_owner`, and also has a
-same-repository pull-request guard. Only owner-originated, owner-triggered
-events can reach the runner. Non-owner reruns are blocked even when the
-original event was permitted. Fork pull requests never execute on the runner,
-even in the public fallback repository. Dependabot, other bots, collaborators,
-and outside actors are also excluded. Operators must never approve untrusted
-fork jobs or weaken any guard; reproduce a reviewed change on an
-owner-controlled, same-repository branch instead.
+## External controller admission
 
-## Isolated Docker-in-Docker runner
+Before registering any runner, an external trusted controller must inspect the
+queued run and fail closed unless all of these values match:
 
-The current implementation uses one repository-scoped workflow-lifetime runner
-process. It accepts jobs serially and shares the dedicated DinD container
-network namespace with one isolated Docker-in-Docker daemon. The runner uses
-`DOCKER_HOST=tcp://127.0.0.1:2375`; that loopback endpoint exists only inside
-the shared container network namespace. This runner never shares that DinD
-with another runner, so two workflow jobs cannot use the daemon concurrently.
+- the event is `push`;
+- the repository is `granolacowboy/recon-osint-antigravity-ci`;
+- the owner and triggering actor are both `granolacowboy`;
+- the workflow is `.github/workflows/ci.yml`;
+- the ref is `refs/heads/main` or matches `refs/heads/codex/**`; and
+- the head commit is the exact reviewed head SHA.
 
-The runner must never bind-mount the host Docker socket at
-`/var/run/docker.sock`. The DinD API and all Compose service ports remain
-inside the dedicated namespace; publish no host ports. Privilege, if the DinD
-daemon requires it, is confined to that disposable daemon rather than granting
-the workflow access to the host.
+No repository runner remains online while no approved job is being admitted.
+The controller obtains short-lived registration material only after admission,
+never bakes it into an image, and never exposes it to workflow steps. It starts
+each runner container with the matching environment values described below.
 
-Supply only short-lived runner registration material to the bootstrap
-supervisor; do not bake it into an image or expose it to workflow steps. The
-jobs receive no repository secrets. The runner image must provide the Docker
-CLI with Compose, Git, curl, and the system dependencies required by the pinned
-Python, Node.js, and Playwright setup actions.
+## One-job isolated Docker-in-Docker runner
 
-The fixed integration ports `16379` and `17687` are safe only because the one
-runner process accepts jobs serially. Redis, Neo4j, API, and browser acceptance
-ports bind inside the shared DinD namespace and never on the physical host.
-Unique Compose projects isolate Docker resources by run, attempt, and job;
-unique image tags isolate the backend and frontend images by run and attempt.
-The workflow cleanup removes each Compose project, its volumes and orphans, and
-the two run-tagged application images before the next applicable job or run.
+The controller provisions one `config.sh --ephemeral --disableupdate` runner
+per job. Every admission receives a fresh runner container and workspace, a
+fresh privileged DinD daemon, a private network namespace, a unique runner
+name, no mounts, no host ports, and no host Docker socket. Privilege is confined
+to the disposable DinD daemon; the workflow runner is not privileged. The
+runner and DinD share only that pair's private network namespace, where
+`DOCKER_HOST=tcp://127.0.0.1:2375` reaches the daemon over loopback.
 
-The workflow uses one repository-global static concurrency group with
-`cancel-in-progress: false`. GitHub therefore permits at most one active run
-and one pending run for this workflow across every branch and pull request; a
-newer queued run may replace an older pending run, but it does not cancel or
-interleave with the active run. Repository-global serialization is required
-because separate refs target the same dedicated runner and DinD lifecycle.
+The runner must never have `/var/run/docker.sock` mounted or available as a
+socket. The DinD API and all Compose service ports remain inside the private
+namespace. The jobs receive no repository secrets. The runner image must
+provide the Docker CLI with Compose, Git, curl, and the system dependencies
+required by the pinned Python, Node.js, and Playwright setup actions.
+
+Each ephemeral runner is automatically deregistered by GitHub after exactly one
+job. The controller verifies deregistration, then destroys only that runner,
+DinD daemon, network, and workspace before provisioning another in the same
+controller slot. Multiple jobs may execute concurrently only when each has its
+own isolated runner/DinD pair and lifecycle. The fixed integration ports
+`16379` and `17687` are safe because namespaces are separate, not because a
+runner accepts jobs serially.
+
+The controller supplies `RECON_EPHEMERAL_RUNNER=1`, sets the nonempty
+`RECON_RUNNER_INSTANCE` to the configured `RUNNER_NAME`, and sets
+`DOCKER_HOST=tcp://127.0.0.1:2375`. Before checkout, every job's first step
+fails closed unless `RECON_EPHEMERAL_RUNNER=1`, `RECON_RUNNER_INSTANCE` is
+nonempty and equals `RUNNER_NAME`, `DOCKER_HOST=tcp://127.0.0.1:2375`, and
+`/var/run/docker.sock` is not a socket. This in-workflow observation cannot
+prove `--ephemeral`; controller registration and GitHub's one-job deregistration
+supply that guarantee.
+
+The workflow retains global workflow concurrency with the static
+`recon-readiness-self-hosted` group and `cancel-in-progress: false`. This limits
+the repository to one active workflow run and one pending run across allowed
+branches, but it does not create or clean runner state. Clean state comes from
+per-job ephemerality, not post-workflow timing.
 
 ## Job lifecycle and cleanup
 
-1. Create a dedicated private container network namespace, DinD daemon, and
-   workflow workspace with no host socket mount or host port mappings.
-2. Start one repository-scoped runner process in that namespace, configure
-   `DOCKER_HOST=tcp://127.0.0.1:2375`, and apply the exact labels above.
-3. Keep that runner process for the complete workflow and let it accept the
-   matching jobs serially.
-4. Let the workflow use per-run, per-attempt, per-job
-   `COMPOSE_PROJECT_NAME` values and per-run, per-attempt `IMAGE_TAG` values.
+For each approved job, a controller slot performs this lifecycle:
+
+1. Verify the queued run metadata and exact reviewed head SHA before obtaining
+   registration material.
+2. Create the dedicated runner container and workspace, privileged DinD daemon,
+   private network namespace, and unique runner name with no mounts or host
+   ports.
+3. Configure the repository-scoped runner with
+   `config.sh --ephemeral --disableupdate`, the exact four labels above, and the
+   matching boundary environment values.
+4. Allow the runner to accept exactly one job. Let the workflow use per-run,
+   per-attempt, per-job `COMPOSE_PROJECT_NAME` values and per-run, per-attempt
+   `IMAGE_TAG` values.
 5. Let each Docker job execute its `if: always()` teardown. Integration runs
    `docker compose down --volumes --remove-orphans`. Container acceptance does
    the same, then attempts both run-tagged image removals while preserving the
    Compose failure status.
-6. After the complete workflow succeeds, fails, times out, or is cancelled,
-   have the bootstrap supervisor unregister and destroy the runner, DinD
-   daemon, private namespace, and workspace. The runner, DinD, and workspace
-   are destroyed after the whole workflow, not after an individual job.
-7. After the active workflow completes, the operator or bootstrap supervisor
-   must finish that destruction and verify cleanup before serving another
-   pending workflow run.
-8. Before the host starts another workflow runner, verify that no runner
-   process, DinD daemon, Compose project, network, volume, image, or workspace
-   from the prior workflow remains.
+6. Whether the job succeeds, fails, times out, or is cancelled, wait for
+   GitHub's automatic one-job deregistration, verify it, and destroy that
+   runner, DinD daemon, namespace, and workspace before the slot admits another
+   job.
 
-Do not reuse dirty workflow state and never attach a second runner to the same
-DinD. The workflow cleanup limits cross-run state; supervisor destruction is
-the cancellation backstop when an `if: always()` step cannot complete.
+Never reuse dirty job state and never attach a second runner to a DinD daemon.
+Workflow cleanup limits state during a job; controller destruction is the
+cancellation backstop when an `if: always()` step cannot complete. Concurrent
+controller slots must never destroy or reuse another slot's resources.
 
 Container acceptance deliberately invokes
 `bash ./scripts/start.sh --detach --no-build` after both unique images have
@@ -139,11 +167,6 @@ The generated VEX and JSON report live only under the runner temporary
 directory; this bootstrap workflow does not upload them, and supervisor
 destruction removes them with the disposable runner workspace.
 
-An ephemeral runner with a fresh DinD daemon and workspace for every job is
-optional future hardening. It is not the current implementation and must not be
-claimed by operational checks until the bootstrap supervisor actually provides
-that lifecycle.
-
 ## History-free public CI mirror fallback
 
 The public fallback is a disposable, allowlisted source snapshot, not a clone
@@ -168,10 +191,11 @@ credentials, local filesystem paths, personal data, and target data before any
 push. A force-push is not a substitute for this pre-publication review because
 previously exposed objects may remain retrievable.
 
-Push only the sanitized root commit to a dedicated public repository. Attach a
-repository-scoped ephemeral runner with the same four labels, run the same
-workflow, record the commit and run URL, and then remove the runner. The public
-mirror must contain no repository secrets and must not have credentials that
-can read the private source repository. Treat the public result as validation
-of that snapshot only; merge decisions and release history remain in the
-private repository.
+Push only the sanitized root commit to a dedicated public repository. Have the
+external controller admit that exact reviewed commit and provision one isolated
+repository-scoped ephemeral runner/DinD pair per job with the same four labels.
+Record the commit and run URL, and verify every runner's deregistration and
+destruction. The public mirror must contain no repository secrets and must not
+have credentials that can read the private source repository. Treat the public
+result as validation of that snapshot only; merge decisions and release history
+remain in the private repository.

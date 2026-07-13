@@ -1,10 +1,10 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches:
       - main
+      - 'codex/**'
 
 permissions:
   contents: read
@@ -16,12 +16,23 @@ concurrency:
 jobs:
   backend:
     name: Backend tests
-    if: github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
     runs-on: [self-hosted, Linux, X64, recon-readiness]
     timeout-minutes: 15
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
+      - name: Verify ephemeral runner boundary
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          test "${RECON_EPHEMERAL_RUNNER:-}" = "1"
+          test -n "${RECON_RUNNER_INSTANCE:-}"
+          test "${RECON_RUNNER_INSTANCE:-}" = "${RUNNER_NAME:-}"
+          test "${DOCKER_HOST:-}" = "tcp://127.0.0.1:2375"
+          test ! -S /var/run/docker.sock
+
       - name: Check out source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -49,13 +60,24 @@ jobs:
 
   frontend:
     name: Frontend quality gates
-    if: github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
     runs-on: [self-hosted, Linux, X64, recon-readiness]
     timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
     steps:
+      - name: Verify ephemeral runner boundary
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          test "${RECON_EPHEMERAL_RUNNER:-}" = "1"
+          test -n "${RECON_RUNNER_INSTANCE:-}"
+          test "${RECON_RUNNER_INSTANCE:-}" = "${RUNNER_NAME:-}"
+          test "${DOCKER_HOST:-}" = "tcp://127.0.0.1:2375"
+          test ! -S /var/run/docker.sock
+
       - name: Check out source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -94,7 +116,7 @@ jobs:
 
   integration:
     name: Real Redis ARQ Neo4j integration
-    if: github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
     runs-on: [self-hosted, Linux, X64, recon-readiness]
     timeout-minutes: 15
     env:
@@ -106,6 +128,17 @@ jobs:
       INTEGRATION_NEO4J_PASSWORD: REPLACE_WITH_RANDOM_NEO4J_PASSWORD
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
+      - name: Verify ephemeral runner boundary
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          test "${RECON_EPHEMERAL_RUNNER:-}" = "1"
+          test -n "${RECON_RUNNER_INSTANCE:-}"
+          test "${RECON_RUNNER_INSTANCE:-}" = "${RUNNER_NAME:-}"
+          test "${DOCKER_HOST:-}" = "tcp://127.0.0.1:2375"
+          test ! -S /var/run/docker.sock
+
       - name: Check out source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -148,13 +181,24 @@ jobs:
 
   containers:
     name: Full-stack container and browser acceptance
-    if: github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
     runs-on: [self-hosted, Linux, X64, recon-readiness]
     timeout-minutes: 35
     env:
       COMPOSE_PROJECT_NAME: "recon-ci-${{ github.run_id }}-${{ github.run_attempt }}-containers"
       IMAGE_TAG: "ci-${{ github.run_id }}-${{ github.run_attempt }}"
     steps:
+      - name: Verify ephemeral runner boundary
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          test "${RECON_EPHEMERAL_RUNNER:-}" = "1"
+          test -n "${RECON_RUNNER_INSTANCE:-}"
+          test "${RECON_RUNNER_INSTANCE:-}" = "${RUNNER_NAME:-}"
+          test "${DOCKER_HOST:-}" = "tcp://127.0.0.1:2375"
+          test ! -S /var/run/docker.sock
+
       - name: Check out source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
