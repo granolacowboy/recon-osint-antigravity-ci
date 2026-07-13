@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   prove-free-public-scheduling:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, recon-free-canary]
     timeout-minutes: 2
     steps:
       - name: Emit inert canary marker
