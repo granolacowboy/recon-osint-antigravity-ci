@@ -169,7 +169,10 @@ def test_backend_does_not_import_html_parser() -> None:
     root = Path(__file__).resolve().parents[1]
     violations: list[str] = []
 
-    for source_path in sorted((root / "app").rglob("*.py")):
+    runtime_sources = sorted((root / "app").rglob("*.py"))
+    runtime_sources.append(root / "scripts" / "container_checks.py")
+
+    for source_path in runtime_sources:
         tree = ast.parse(source_path.read_text(encoding="utf-8"), source_path.as_posix())
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

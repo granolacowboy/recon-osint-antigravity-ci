@@ -132,6 +132,50 @@ def test_security_actions_do_not_upload_or_cache_scan_state() -> None:
     )
 
 
+def test_backend_vex_is_bound_and_verified_for_the_exact_run_image() -> None:
+    steps = _step_blocks(_job_block("containers"))
+    render_indices = [
+        index
+        for index, step in enumerate(steps)
+        if "python scripts/render_openvex.py" in step
+    ]
+    backend_scan_indices = [
+        index
+        for index, step in enumerate(steps)
+        if "uses: anchore/scan-action@" in step
+        and "image: recon-osint-api:${{ env.IMAGE_TAG }}" in step
+    ]
+    verify_indices = [
+        index
+        for index, step in enumerate(steps)
+        if "python scripts/verify_grype_vex.py" in step
+    ]
+
+    assert len(render_indices) == len(backend_scan_indices) == len(verify_indices) == 1
+    assert render_indices[0] < backend_scan_indices[0] < verify_indices[0]
+
+    render = re.sub(r"\s+", " ", steps[render_indices[0]])
+    assert '--product "recon-osint-api:${IMAGE_TAG}"' in render
+    assert '--destination "${RUNNER_TEMP}/recon-api.openvex.json"' in render
+
+    scan = steps[backend_scan_indices[0]]
+    assert re.search(
+        r"(?m)^          vex:\s*\$\{\{ runner\.temp \}\}/recon-api\.openvex\.json\s*$",
+        scan,
+    )
+    assert re.search(r"(?m)^          output-format:\s*json\s*$", scan)
+    assert re.search(
+        r"(?m)^          output-file:\s*\$\{\{ runner\.temp \}\}/recon-api-grype\.json\s*$",
+        scan,
+    )
+
+    verify = re.sub(r"\s+", " ", steps[verify_indices[0]])
+    assert '--report "${RUNNER_TEMP}/recon-api-grype.json"' in verify
+    assert '--product "recon-osint-api:${IMAGE_TAG}"' in verify
+    assert "pkg:generic/python@3.13.14" not in render
+    assert "pkg:generic/python@3.13.14" not in verify
+
+
 def test_docker_jobs_are_unique_and_always_remove_state() -> None:
     project_names: dict[str, str] = {}
     for job_name in ("integration", "containers"):

@@ -114,6 +114,31 @@ It then starts the full stack with `docker compose up --no-build --pull never`.
 Neither command can implicitly build or substitute a registry image, so
 acceptance can use only the scanned local tags and fails if either is missing.
 
+## Run-scoped backend VEX evidence
+
+The checked-in backend OpenVEX document is the reviewed source statement, not
+the file passed directly to Grype. Before scanning, CI validates that statement
+and renders a temporary copy whose application product is the exact run image,
+`recon-osint-api:ci-<run-id>-<run-attempt>`. The generated document has a unique
+document ID, current UTC document and statement timestamps, and `version: 1`.
+It changes only the reviewed CI product binding; the local product, impact
+statement, status, justification, and provenance remain intact.
+
+Python remains the subcomponent `pkg:generic/python@3.13.14`. It must never be
+promoted to the VEX product because that would make a broader claim about every
+installation of that Python release. Likewise, do not create a shared mutable
+image alias merely to make VEX matching succeed. The exact run tag preserves
+the application-level statement and the workflow's per-run image isolation.
+
+The backend vulnerability gate continues to scan the Docker image, not a
+detached SBOM. It emits a runner-local JSON report, and a separate proof step
+requires CVE-2026-15308 to appear exactly once in `ignoredMatches` for the
+reviewed Python subcomponent with an applied VEX `not_affected` rule. The scan
+still fails on any fixable critical or high vulnerability that remains active.
+The generated VEX and JSON report live only under the runner temporary
+directory; this bootstrap workflow does not upload them, and supervisor
+destruction removes them with the disposable runner workspace.
+
 An ephemeral runner with a fresh DinD daemon and workspace for every job is
 optional future hardening. It is not the current implementation and must not be
 claimed by operational checks until the bootstrap supervisor actually provides

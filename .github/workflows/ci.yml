@@ -158,6 +158,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Set up Python for CI evidence checks
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: 3.13.14
+
       - name: Validate Compose model
         run: docker compose --env-file .env.example config --quiet
 
@@ -177,6 +182,13 @@ jobs:
           --tag "recon-osint-frontend:${IMAGE_TAG}"
           .
 
+      - name: Bind reviewed backend VEX to this run image
+        run: |
+          python scripts/render_openvex.py \
+            --source security/recon-api.openvex.json \
+            --destination "${RUNNER_TEMP}/recon-api.openvex.json" \
+            --product "recon-osint-api:${IMAGE_TAG}"
+
       - name: Generate backend image SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
@@ -191,12 +203,19 @@ jobs:
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           image: recon-osint-api:${{ env.IMAGE_TAG }}
-          vex: security/recon-api.openvex.json
+          vex: ${{ runner.temp }}/recon-api.openvex.json
           fail-build: true
           severity-cutoff: high
           only-fixed: true
           cache-db: false
-          output-format: table
+          output-format: json
+          output-file: ${{ runner.temp }}/recon-api-grype.json
+
+      - name: Prove the reviewed VEX matched this run image
+        run: |
+          python scripts/verify_grype_vex.py \
+            --report "${RUNNER_TEMP}/recon-api-grype.json" \
+            --product "recon-osint-api:${IMAGE_TAG}"
 
       - name: Generate frontend image SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
