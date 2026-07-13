@@ -20,9 +20,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, recon-readiness]
     timeout-minutes: 15
     env:
-      AUTH_ENABLED: "false"
-      CORS_ORIGINS: '["http://127.0.0.1:4173"]'
-      NEO4J_PASSWORD: ci-not-used
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - name: Check out source

@@ -83,6 +83,16 @@ def test_self_hosted_jobs_require_owner_and_reject_fork_pull_requests() -> None:
         assert guards == [OWNER_AND_FORK_GUARD], job_name
 
 
+def test_backend_job_preserves_application_configuration_defaults() -> None:
+    backend = _job_block("backend")
+    for variable in ("AUTH_ENABLED", "CORS_ORIGINS", "NEO4J_PASSWORD"):
+        assert re.search(rf"(?m)^      {variable}:\s*", backend) is None, variable
+
+    assert re.search(
+        r'(?m)^      PYTHONDONTWRITEBYTECODE:\s*"1"\s*$', backend
+    )
+
+
 def test_actions_are_sha_pinned_without_artifact_or_cache_actions() -> None:
     action_refs = re.findall(r"(?m)^\s*uses:\s*([^\s#]+)", WORKFLOW)
     assert action_refs, "workflow must retain its action-backed gates"
