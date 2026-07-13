@@ -1,0 +1,17 @@
+name: Free Actions canary
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove-free-public-scheduling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Emit inert canary marker
+        run: printf '%s\n' 'free-public-actions-canary-ok'
