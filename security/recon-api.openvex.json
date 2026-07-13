@@ -1,0 +1,36 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://recon-osint.invalid/security/vex/cve-2026-15308",
+  "author": "RECON OSINT maintainers",
+  "timestamp": "2026-07-12T22:47:58Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-15308"
+      },
+      "products": [
+        {
+          "@id": "recon-osint-api:ci",
+          "subcomponents": [
+            {
+              "@id": "pkg:generic/python@3.13.14"
+            }
+          ]
+        },
+        {
+          "@id": "recon-osint-api:local",
+          "subcomponents": [
+            {
+              "@id": "pkg:generic/python@3.13.14"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The API accepts structured data, and first-party runtime code does not import or reference html.parser. A repository AST regression test enforces that boundary; locked runtime dependency updates require review of this statement.",
+      "timestamp": "2026-07-12T22:47:58Z"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Explicit loopback-only datastore publishing for the real integration gate.
+# Never include this override in a production deployment.
+services:
+  redis:
+    ports:
+      - 127.0.0.1:${INTEGRATION_REDIS_PORT:-16379}:6379
+    networks:
+      - backend
+      - integration_host
+
+  neo4j:
+    ports:
+      - 127.0.0.1:${INTEGRATION_NEO4J_PORT:-17687}:7687
+    networks:
+      - backend
+      - integration_host
+
+networks:
+  integration_host:

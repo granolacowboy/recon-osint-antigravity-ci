@@ -1,0 +1,1665 @@
+{
+  "components": {
+    "schemas": {
+      "AdapterRun": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter_id": {
+            "title": "Adapter Id",
+            "type": "string"
+          },
+          "adapter_version": {
+            "title": "Adapter Version",
+            "type": "string"
+          },
+          "attempts": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "finding_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finding Count",
+            "type": "integer"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latency_seconds": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Latency Seconds",
+            "type": "number"
+          },
+          "outcome_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Code"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "scan_id": {
+            "title": "Scan Id",
+            "type": "string"
+          },
+          "source_target": {
+            "$ref": "#/components/schemas/ScanTarget"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AdapterState"
+          }
+        },
+        "required": [
+          "case_id",
+          "scan_id",
+          "owner_id",
+          "adapter_id",
+          "adapter_version",
+          "source_target",
+          "state"
+        ],
+        "title": "AdapterRun",
+        "type": "object"
+      },
+      "AdapterState": {
+        "description": "Truthful terminal states for one adapter invocation.",
+        "enum": [
+          "queued",
+          "running",
+          "unavailable",
+          "succeeded",
+          "no_results",
+          "retryable_failure",
+          "failed"
+        ],
+        "title": "AdapterState",
+        "type": "string"
+      },
+      "CapabilitiesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "adapters": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityAdapter"
+            },
+            "title": "Adapters",
+            "type": "array"
+          },
+          "dependencies": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Dependencies",
+            "type": "object"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/CapabilityPolicy"
+          }
+        },
+        "required": [
+          "adapters",
+          "dependencies",
+          "policy"
+        ],
+        "title": "CapabilitiesResponse",
+        "type": "object"
+      },
+      "CapabilityAdapter": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter_id": {
+            "title": "Adapter Id",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "max_attempts": {
+            "minimum": 1.0,
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "passive": {
+            "title": "Passive",
+            "type": "boolean"
+          },
+          "target_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Target Types",
+            "type": "array"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": [
+          "adapter_id",
+          "display_name",
+          "target_types",
+          "passive",
+          "enabled",
+          "max_attempts"
+        ],
+        "title": "CapabilityAdapter",
+        "type": "object"
+      },
+      "CapabilityPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "active_scanning_authorized": {
+            "title": "Active Scanning Authorized",
+            "type": "boolean"
+          },
+          "active_scanning_enabled": {
+            "title": "Active Scanning Enabled",
+            "type": "boolean"
+          },
+          "active_scope_configured": {
+            "title": "Active Scope Configured",
+            "type": "boolean"
+          },
+          "max_batch_size": {
+            "minimum": 1.0,
+            "title": "Max Batch Size",
+            "type": "integer"
+          },
+          "passive_default": {
+            "default": true,
+            "title": "Passive Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active_scanning_enabled",
+          "active_scanning_authorized",
+          "active_scope_configured",
+          "max_batch_size"
+        ],
+        "title": "CapabilityPolicy",
+        "type": "object"
+      },
+      "Case": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_id": {
+            "minLength": 1,
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "owner_id",
+          "name"
+        ],
+        "title": "Case",
+        "type": "object"
+      },
+      "CaseCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CaseCreate",
+        "type": "object"
+      },
+      "GraphEdge": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "relationship": {
+            "minLength": 1,
+            "title": "Relationship",
+            "type": "string"
+          },
+          "scan_id": {
+            "title": "Scan Id",
+            "type": "string"
+          },
+          "source_node_id": {
+            "title": "Source Node Id",
+            "type": "string"
+          },
+          "target_node_id": {
+            "title": "Target Node Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "scan_id",
+          "owner_id",
+          "source_node_id",
+          "target_node_id",
+          "relationship"
+        ],
+        "title": "GraphEdge",
+        "type": "object"
+      },
+      "GraphNode": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "enum": [
+              "username",
+              "email",
+              "phone",
+              "domain",
+              "ip",
+              "url",
+              "company",
+              "vulnerability",
+              "cve",
+              "repository",
+              "cloud_storage",
+              "breach",
+              "dark_web_forum"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "scan_id": {
+            "title": "Scan Id",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "scan_id",
+          "owner_id",
+          "entity_type",
+          "value"
+        ],
+        "title": "GraphNode",
+        "type": "object"
+      },
+      "GraphPage": {
+        "additionalProperties": false,
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/Provenance"
+            },
+            "title": "Provenance",
+            "type": "array"
+          }
+        },
+        "title": "GraphPage",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Provenance": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter_version": {
+            "title": "Adapter Version",
+            "type": "string"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "edge_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edge Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "scan_id": {
+            "title": "Scan Id",
+            "type": "string"
+          },
+          "source_adapter_id": {
+            "title": "Source Adapter Id",
+            "type": "string"
+          },
+          "source_relationship": {
+            "minLength": 1,
+            "title": "Source Relationship",
+            "type": "string"
+          },
+          "source_target": {
+            "$ref": "#/components/schemas/ScanTarget"
+          }
+        },
+        "required": [
+          "case_id",
+          "scan_id",
+          "owner_id",
+          "source_adapter_id",
+          "adapter_version",
+          "confidence",
+          "source_target",
+          "source_relationship"
+        ],
+        "title": "Provenance",
+        "type": "object"
+      },
+      "Scan": {
+        "additionalProperties": false,
+        "properties": {
+          "active_authorized_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Authorized At"
+          },
+          "active_authorized_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Authorized By"
+          },
+          "active_scan_confirmed": {
+            "default": false,
+            "title": "Active Scan Confirmed",
+            "type": "boolean"
+          },
+          "active_scope": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Active Scope",
+            "type": "array"
+          },
+          "adapter_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adapter Ids"
+          },
+          "cancel_requested": {
+            "default": false,
+            "title": "Cancel Requested",
+            "type": "boolean"
+          },
+          "case_id": {
+            "minLength": 1,
+            "title": "Case Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ScanMode",
+            "default": "passive"
+          },
+          "outcome_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Code"
+          },
+          "owner_id": {
+            "minLength": 1,
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ScanState",
+            "default": "queued"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ScanTarget"
+            },
+            "minItems": 1,
+            "title": "Targets",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "worker_attempt": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Worker Attempt",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case_id",
+          "owner_id",
+          "targets"
+        ],
+        "title": "Scan",
+        "type": "object"
+      },
+      "ScanCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "active_scan_confirmed": {
+            "default": false,
+            "title": "Active Scan Confirmed",
+            "type": "boolean"
+          },
+          "adapter_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adapter Ids"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ScanMode",
+            "default": "passive"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ScanTarget"
+            },
+            "maxItems": 25,
+            "minItems": 1,
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "targets"
+        ],
+        "title": "ScanCreate",
+        "type": "object"
+      },
+      "ScanDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "active_authorized_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Authorized At"
+          },
+          "active_authorized_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Authorized By"
+          },
+          "active_scan_confirmed": {
+            "default": false,
+            "title": "Active Scan Confirmed",
+            "type": "boolean"
+          },
+          "active_scope": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Active Scope",
+            "type": "array"
+          },
+          "adapter_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adapter Ids"
+          },
+          "adapter_runs": {
+            "items": {
+              "$ref": "#/components/schemas/AdapterRun"
+            },
+            "title": "Adapter Runs",
+            "type": "array"
+          },
+          "cancel_requested": {
+            "default": false,
+            "title": "Cancel Requested",
+            "type": "boolean"
+          },
+          "case_id": {
+            "minLength": 1,
+            "title": "Case Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ScanMode",
+            "default": "passive"
+          },
+          "outcome_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Code"
+          },
+          "owner_id": {
+            "minLength": 1,
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ScanState",
+            "default": "queued"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ScanTarget"
+            },
+            "minItems": 1,
+            "title": "Targets",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "worker_attempt": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Worker Attempt",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case_id",
+          "owner_id",
+          "targets"
+        ],
+        "title": "ScanDetail",
+        "type": "object"
+      },
+      "ScanMode": {
+        "enum": [
+          "passive",
+          "active"
+        ],
+        "title": "ScanMode",
+        "type": "string"
+      },
+      "ScanState": {
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "partial",
+          "failed",
+          "cancelled"
+        ],
+        "title": "ScanState",
+        "type": "string"
+      },
+      "ScanTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "target_type": {
+            "enum": [
+              "username",
+              "email",
+              "phone",
+              "domain",
+              "ip",
+              "url",
+              "company",
+              "vulnerability",
+              "cve",
+              "repository",
+              "cloud_storage",
+              "breach",
+              "dark_web_forum"
+            ],
+            "title": "Target Type",
+            "type": "string"
+          },
+          "target_value": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Target Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_type",
+          "target_value"
+        ],
+        "title": "ScanTarget",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "RECON OSINT API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "liveness_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Liveness Health Live Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Liveness"
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "readiness_health_ready_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Operations-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operations-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Readiness"
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics_metrics_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Operations-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operations-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Metrics"
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "operationId": "capabilities_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilitiesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Capabilities"
+      }
+    },
+    "/v1/cases": {
+      "get": {
+        "operationId": "list_cases_v1_cases_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Case"
+                  },
+                  "title": "Response List Cases V1 Cases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Cases"
+      },
+      "post": {
+        "operationId": "create_case_v1_cases_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Case"
+      }
+    },
+    "/v1/cases/{case_id}": {
+      "get": {
+        "operationId": "get_case_v1_cases__case_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Case"
+      }
+    },
+    "/v1/cases/{case_id}/scans": {
+      "get": {
+        "operationId": "list_case_scans_v1_cases__case_id__scans_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Scan"
+                  },
+                  "title": "Response List Case Scans V1 Cases  Case Id  Scans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Case Scans"
+      },
+      "post": {
+        "operationId": "create_scan_v1_cases__case_id__scans_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scan"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Scan"
+      }
+    },
+    "/v1/scans/{scan_id}": {
+      "get": {
+        "operationId": "get_scan_v1_scans__scan_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Scan"
+      }
+    },
+    "/v1/scans/{scan_id}/cancel": {
+      "post": {
+        "operationId": "cancel_scan_v1_scans__scan_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Scan"
+      }
+    },
+    "/v1/scans/{scan_id}/events": {
+      "get": {
+        "operationId": "scan_events_v1_scans__scan_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Scan Events"
+      }
+    },
+    "/v1/scans/{scan_id}/graph": {
+      "get": {
+        "operationId": "get_graph_v1_scans__scan_id__graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Graph"
+      }
+    }
+  }
+}
