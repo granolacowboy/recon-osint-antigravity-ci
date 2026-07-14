@@ -86,13 +86,23 @@ describe('case history', () => {
     renderRoute(createMockApi({ listCases }));
     const user = userEvent.setup();
 
-    const loadMore = await screen.findByRole('button', { name: /load more cases/i });
+    const loadMore = await screen.findByText(/^load more cases$/i, { selector: 'button' });
     await user.click(loadMore);
 
-    expect(await screen.findByRole('link', { name: /case 50/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^case 0/i })).toBeInTheDocument();
+    const appendedCase = await screen.findByText(/^case 50$/i, { selector: 'strong' });
+    const existingCase = screen.getByText(/^case 0$/i, { selector: 'strong' });
+    const appendedCaseLink = appendedCase.closest('a');
+    const existingCaseLink = existingCase.closest('a');
+    expect(appendedCaseLink).toBeInTheDocument();
+    expect(appendedCaseLink).toHaveRole('link');
+    expect(appendedCaseLink).toHaveAccessibleName(/case 50/i);
+    expect(appendedCaseLink).toHaveAttribute('href', '/cases/case-50');
+    expect(existingCaseLink).toBeInTheDocument();
+    expect(existingCaseLink).toHaveRole('link');
+    expect(existingCaseLink).toHaveAccessibleName(/case 0/i);
+    expect(existingCaseLink).toHaveAttribute('href', '/cases/case-0');
     expect(listCases).toHaveBeenNthCalledWith(1, { offset: 0, limit: 50 });
     expect(listCases).toHaveBeenNthCalledWith(2, { offset: 50, limit: 50 });
-    expect(screen.queryByRole('button', { name: /load more cases/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^load more cases$/i, { selector: 'button' })).not.toBeInTheDocument();
   });
 });
