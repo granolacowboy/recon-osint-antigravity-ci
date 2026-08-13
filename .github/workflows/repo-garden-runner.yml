@@ -1,0 +1,44 @@
+name: Repository Garden Isolated Read-Only Runner
+
+on:
+  push:
+    branches: [repo-garden-runner]
+    paths:
+      - .github/workflows/repo-garden-runner.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-garden-isolated-runner
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repo-garden-runner
+          fetch-depth: 1
+
+      - name: Syntax check
+        run: python3 -m py_compile repo-garden-runner/materialize.py
+
+      - name: Materialize Sweep A read-only state
+        run: python3 repo-garden-runner/materialize.py
+
+      - name: Commit output to isolated runner branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add repo-garden-output/
+          if git diff --cached --quiet; then
+            echo "No output changes."
+          else
+            git commit -m "repo garden: materialize isolated Sweep A output"
+            git push origin HEAD:repo-garden-runner
+          fi
